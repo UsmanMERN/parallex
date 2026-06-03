@@ -65,12 +65,14 @@ cd parallex
 npm install
 ```
 
-### 3. Process the Burger Frames
-The repository contains the original high-resolution frames with a solid background inside `public/burger-frames/` (tracked under Git). To generate the high-quality transparent frames used by the WebGL canvas, run the parallel extraction script:
+### 3. Process the Burger Frames (Optional / Dev Setup)
+The repository already contains the pre-processed, highly-optimized transparent WebP frames under `public/frames/` (tracked in Git, total size ~16MB). 
+
+If you want to re-generate the frames from the raw green-background PNGs inside `public/burger-frames/`, make sure `ffmpeg` is installed, and run:
 ```bash
 npm run process-frames
 ```
-This script leverages all available CPU cores to extract the frames into `public/frames/` (which is excluded from Git to keep the repository lightweight).
+This script leverages all available CPU cores to extract, transparentize (using the perfect colorkey values), downsample to 298 frames, and encode them directly to `.webp` in parallel.
 
 ### 4. Run the Development Server
 ```bash
