@@ -34,8 +34,8 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     if (hasStarted.current) return;
     hasStarted.current = true;
 
-    const startFrame = 5;
-    const endFrame = 600;
+    const startFrame = 1;
+    const endFrame = 298;
     const totalFrames = endFrame - startFrame + 1;
     let loadedCount = 0;
 
@@ -44,7 +44,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     for (let i = startFrame; i <= endFrame; i++) {
       const img = new Image();
       const frameNum = String(i).padStart(3, "0");
-      img.src = `/frames/frame_${frameNum}.png`;
+      img.src = `/frames/frame_${frameNum}.webp`;
 
       img.onload = () => {
         loadedCount++;

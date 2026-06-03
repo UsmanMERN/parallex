@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "process-frames": "mkdir -p public/frames && seq 1 600 | xargs -I {} -P $(sysctl -n hw.ncpu) sh -c 'num=$(printf \"%03d\" {}); [ -f public/burger-frames/frame_$num.png ] && ffmpeg -y -i public/burger-frames/frame_$num.png -vf \"colorkey=0xC6CDD0:0.12:0.05\" -c:v png public/frames/frame_$num.png || true'"
+    "process-frames": "node scripts/process-webp-frames.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
