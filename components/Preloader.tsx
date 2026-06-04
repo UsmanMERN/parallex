@@ -34,16 +34,27 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     if (hasStarted.current) return;
     hasStarted.current = true;
 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const step = isMobile ? 4 : 1;
+
     const startFrame = 1;
     const endFrame = 298;
-    const totalFrames = endFrame - startFrame + 1;
-    let loadedCount = 0;
 
+    const framesToLoad: number[] = [];
+    for (let i = startFrame; i <= endFrame; i += step) {
+      framesToLoad.push(i);
+    }
+
+    const totalFrames = framesToLoad.length;
+    let loadedCount = 0;
     const loadedImages: HTMLImageElement[] = [];
 
-    for (let i = startFrame; i <= endFrame; i++) {
+    // Ensure the global cache is empty before populating
+    globalImageCache.length = 0;
+
+    framesToLoad.forEach((frameNumVal, index) => {
       const img = new Image();
-      const frameNum = String(i).padStart(3, "0");
+      const frameNum = String(frameNumVal).padStart(3, "0");
       img.src = `/frames/frame_${frameNum}.webp`;
 
       img.onload = () => {
@@ -76,8 +87,8 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         }
       };
 
-      loadedImages[i - startFrame] = img;
-    }
+      loadedImages[index] = img;
+    });
   }, [onComplete]);
 
   return (

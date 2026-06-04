@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import FramePlane from "./FramePlane";
 import Particles from "./Particles";
 import PostProcessingEffects from "./PostProcessingEffects";
@@ -29,10 +29,23 @@ function CameraRig() {
 }
 
 export default function Scene({ scrollProgressRef }: SceneProps) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [dpr, setDpr] = useState<number | [number, number]>([1, 2]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    };
+    const mobile = checkMobile();
+    setIsMobile(mobile);
+    setDpr(mobile ? 1 : [1, 2]);
+  }, []);
+
   return (
     <div className="w-full h-full relative">
       <Canvas
         camera={{ position: [0, 0, 5.0], fov: 45 }}
+        dpr={dpr}
         gl={{ 
           antialias: true,
           alpha: true,
@@ -57,7 +70,7 @@ export default function Scene({ scrollProgressRef }: SceneProps) {
           <CameraRig />
           
           {/* Post Processing Composer (Bloom, Vignette, Chromatic Aberration) */}
-          <PostProcessingEffects scrollProgressRef={scrollProgressRef} />
+          {!isMobile && <PostProcessingEffects scrollProgressRef={scrollProgressRef} />}
         </Suspense>
       </Canvas>
     </div>

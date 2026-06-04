@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -10,7 +10,17 @@ interface ParticlesProps {
 
 export default function Particles({ scrollProgressRef }: ParticlesProps) {
   const pointsRef = useRef<THREE.Points>(null);
-  const count = 420; // Dense but elegant field of golden embers
+  
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      return typeof window !== "undefined" && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+    };
+    setIsMobile(checkMobile());
+  }, []);
+
+  const count = isMobile ? 120 : 420; // Fewer particles on mobile for performance
 
   // Create a premium warm-gold particle texture with soft falloff
   const texture = useMemo(() => {
@@ -61,11 +71,11 @@ export default function Particles({ scrollProgressRef }: ParticlesProps) {
     }
 
     return [pos, base, sway, sz];
-  }, []);
+  }, [count]);
 
   const lastScroll = useRef(0);
   const scrollVelocity = useRef(0);
-  const activeDisplacements = useMemo(() => new Float32Array(count * 3), []);
+  const activeDisplacements = useMemo(() => new Float32Array(count * 3), [count]);
 
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const planeZ = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), []);
@@ -79,8 +89,11 @@ export default function Particles({ scrollProgressRef }: ParticlesProps) {
     scrollVelocity.current = scrollVelocity.current * 0.93 + scrollDiff * 0.07;
     lastScroll.current = currentScroll;
 
-    raycaster.setFromCamera(state.pointer, state.camera);
-    raycaster.ray.intersectPlane(planeZ, mouseWorld);
+    // Only run expensive raycasting and mouse interaction on desktop
+    if (!isMobile) {
+      raycaster.setFromCamera(state.pointer, state.camera);
+      raycaster.ray.intersectPlane(planeZ, mouseWorld);
+    }
 
     const time = state.clock.getElapsedTime();
     const posAttr = pointsRef.current.geometry.attributes.position;
@@ -111,34 +124,40 @@ export default function Particles({ scrollProgressRef }: ParticlesProps) {
         basePositions[ix] = (Math.random() - 0.5) * 14;
       }
 
-      // Mouse repulsion
-      const dx = basePositions[ix] - mouseWorld.x;
-      const dy = basePositions[iy] - mouseWorld.y;
-      const dz = basePositions[iz] - mouseWorld.z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (!isMobile) {
+        // Mouse repulsion - completely skipped on mobile to save CPU
+        const dx = basePositions[ix] - mouseWorld.x;
+        const dy = basePositions[iy] - mouseWorld.y;
+        const dz = basePositions[iz] - mouseWorld.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-      let targetDispX = 0;
-      let targetDispY = 0;
+        let targetDispX = 0;
+        let targetDispY = 0;
 
-      const pushRadius = 2.4;
-      if (dist < pushRadius) {
-        const normalizedDist = (pushRadius - dist) / pushRadius;
-        const pushForce = normalizedDist * normalizedDist * 1.2;
+        const pushRadius = 2.4;
+        if (dist < pushRadius) {
+          const normalizedDist = (pushRadius - dist) / pushRadius;
+          const pushForce = normalizedDist * normalizedDist * 1.2;
 
-        if (dist > 0.01) {
-          targetDispX = (dx / dist) * pushForce;
-          targetDispY = (dy / dist) * pushForce;
-        } else {
-          targetDispX = (Math.random() - 0.5) * pushForce;
-          targetDispY = (Math.random() - 0.5) * pushForce;
+          if (dist > 0.01) {
+            targetDispX = (dx / dist) * pushForce;
+            targetDispY = (dy / dist) * pushForce;
+          } else {
+            targetDispX = (Math.random() - 0.5) * pushForce;
+            targetDispY = (Math.random() - 0.5) * pushForce;
+          }
         }
+
+        activeDisplacements[ix] += (targetDispX - activeDisplacements[ix]) * 0.065;
+        activeDisplacements[iy] += (targetDispY - activeDisplacements[iy]) * 0.065;
+
+        posArr[ix] = basePositions[ix] + activeDisplacements[ix];
+        posArr[iy] = basePositions[iy] + activeDisplacements[iy];
+      } else {
+        // Mobile direct position assignment (saves CPU processing/interpolations)
+        posArr[ix] = basePositions[ix];
+        posArr[iy] = basePositions[iy];
       }
-
-      activeDisplacements[ix] += (targetDispX - activeDisplacements[ix]) * 0.065;
-      activeDisplacements[iy] += (targetDispY - activeDisplacements[iy]) * 0.065;
-
-      posArr[ix] = basePositions[ix] + activeDisplacements[ix];
-      posArr[iy] = basePositions[iy] + activeDisplacements[iy];
       posArr[iz] = basePositions[iz];
     }
 
